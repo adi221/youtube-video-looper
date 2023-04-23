@@ -18,6 +18,44 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   }
 });
 
+function mergeIntervals(intervals) {
+  if (intervals.length <= 1) return intervals
+  intervals.sort((a, b) => a.startTimeSec - b.startTimeSec || a.endTimeSec - b.endTimeSec)
+  const res = [intervals[0]]
+  for (const curr of intervals) {
+    const prev = res[res.length - 1]
+    if (prev.startTimeSec === curr.startTimeSec || prev.endTimeSec >= curr.startTimeSec) {
+      if (prev.endTimeSec < curr.endTimeSec) {
+        prev.endTimeSec = curr.endTimeSec
+        prev.endTimeText = curr.endTimeText
+      }
+    } else {
+      res.push(curr)
+    }
+  }
+  return res
+}
+
+function padding2(num) {
+  return num.toString().padStart(2, '0')
+}
+
+function formatVideoLengthInSeconds(videoLengthSeconds) {
+  const hours = Math.floor(videoLengthSeconds / 3600);
+  const minutes = Math.floor((videoLengthSeconds - hours * 3600) / 60);
+  const seconds = Math.floor(videoLengthSeconds - hours * 3600 - minutes * 60);
+
+  const hoursWithPadding = padding2(hours);
+  const minutesWithPadding = padding2(minutes);
+  const secondsWithPadding = padding2(seconds);
+
+  const result = `${minutesWithPadding}:${secondsWithPadding}`;
+  if (hours > 0) {
+    return `${hoursWithPadding}:${result}`;
+  }
+  return result;
+}
+
 function deepCopy(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
@@ -42,7 +80,7 @@ function startLoop(data) {
   if (!videoPlayer) return
   const videoLength = videoPlayer.duration;
   if (endTime > videoLength) {
-    alert("End time must be less than the video length.");
+    alert(`End time must be less than video length (${formatVideoLengthInSeconds(videoLength)})`);
     return;
   }
   // Set the start time of the loop
@@ -55,7 +93,8 @@ function startLoop(data) {
   });
 
   // Add the interval to the storage with mergeIntervals
-  playerStorageData.intervals.push(data);
+  const newIntervals = [...playerStorageData.intervals, data]
+  playerStorageData.intervals = mergeIntervals(newIntervals)
   chrome.storage.local.set({ playerStorageData });
 }
 
