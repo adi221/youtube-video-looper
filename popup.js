@@ -1,32 +1,43 @@
-/* Chrome listeners */
+const eventsMap = Object.freeze({
+  START_LOOP: "startLoop",
+  STOP_LOOP: "stopLoop",
+});
+
+const VALID_TIME_INPUT_REGEX = /^(\d{1,2}:)?([0-5]?[0-9]:)?[0-5]?[0-9]$/;
+const YOUTUBE_WATCH_REGEX = /^https?:\/\/(www\.)?youtube\.com\/watch/;
 
 // Check if the current window is youtube or youtube music
 chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-  var url = tabs[0].url;
+  const url = tabs[0].url;
+  const isYoutubeWatchPage = YOUTUBE_WATCH_REGEX.test(url);
 
-  const youtubeOrMusicRegex = /^https?:\/\/(www\.)?(music\.|)youtube\.com\/watch/;
-  var isYoutubeOrMusicPage = youtubeOrMusicRegex.test(url);
-
-  if (!isYoutubeOrMusicPage) {
-    var div = document.createElement('div');
+  if (!isYoutubeWatchPage) {
+    const div = document.createElement('div');
     div.className = 'overlay';
-    div.innerHTML = 'This extension can only work on YouTube and YouTube Music.';
+    div.innerHTML = 'This extension can only work on YouTube.';
     document.body.appendChild(div);
 
     document.querySelector('form').style.display = 'none';
   }
 });
 
+/* Chrome listeners */
+chrome.storage.onChanged.addListener(function(changes, namespace) {
+  if (namespace == "local" && changes.playerStorageData) {
+    const { intervals } = changes.playerStorageData.newValue;
+    renderTimeIntervals(intervals);
+  }
+});
+
 /* DOM elements and event listeners */
 document.getElementById("loopButton").addEventListener("click", onLoopButtonClick);
-
-const VALID_TIME_INPUT_REGEX = /^(\d{1,2}):?(\d{1,2})?:?(\d{1,2})?$/;
+document.getElementById("resetButton").addEventListener("click", onResetButtonClick);
 
 function isInputValid(text) {
   return VALID_TIME_INPUT_REGEX.test(text);
 }
 
-function getTime(timeStr) {
+function getTimeInSeconds(timeStr) {
   const splitted = timeStr.split(':')
   if (splitted.length == 2) splitted.unshift('0')
   const [h, m, s] = splitted
@@ -35,19 +46,34 @@ function getTime(timeStr) {
 
 function onLoopButtonClick(e) {
   e.preventDefault();
-  const startTimeValue = document.getElementById("startTimeInput").value;
-  const endTimeValue = document.getElementById("endTimeInput").value;
-  if (!isInputValid(startTimeValue) || !isInputValid(endTimeValue)) {
+  const startTimeText = document.getElementById("startTimeInput").value;
+  const endTimeText = document.getElementById("endTimeInput").value;
+  if (!isInputValid(startTimeText) || !isInputValid(endTimeText)) {
     alert("Please enter valid start and end times.");
     return;
   }
 
-  const startTime = getTime(startTimeValue)
-  const endTime = getTime(endTimeValue)
+  const startTimeSec = getTimeInSeconds(startTimeText)
+  const endTimeSec = getTimeInSeconds(endTimeText)
 
-  if (startTime >= endTime) {
+  if (startTimeSec >= endTimeSec) {
     alert("Start time must be before end time.");
     return;
   }
-  chrome.runtime.sendMessage({ type: "startLoop", startTime, endTime });
+  chrome.runtime.sendMessage({ type: eventsMap.START_LOOP, data: { startTimeSec, endTimeSec, startTimeText, endTimeText  } });
+}
+
+function onResetButtonClick(e) {
+  e.preventDefault();
+  chrome.runtime.sendMessage({ type: eventsMap.STOP_LOOP });
+}
+
+function renderTimeIntervals(intervals) {
+  const ul = document.getElementById("timeIntervals");
+  ul.innerHTML = "";
+  intervals.forEach(({ startTimeText, endTimeText }) => {
+    const li = document.createElement("li");
+    li.innerHTML = `${startTimeText} - ${endTimeText}`;
+    ul.appendChild(li);
+  });
 }

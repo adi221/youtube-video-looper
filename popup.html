@@ -5,10 +5,14 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body class="container">
+    <ul id="timeIntervals"></ul>
     <form>
       <input type="text" id="startTimeInput" name="startTimeInput" placeholder="Start Time - hh:mm:ss or mm:ss" required>
       <input type="text" id="endTimeInput" name="endTimeInput" placeholder="End Time - hh:mm:ss or mm:ss" required>
-      <button id="loopButton">Loop Video</button>
+      <div class="buttons">
+        <button id="loopButton">Loop Video</button>
+        <button id="resetButton">Reset</button>
+      </div>
     </form>
     <script src="popup.js"></script>
   </body>
