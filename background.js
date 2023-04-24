@@ -1,4 +1,4 @@
-chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(message) {
   // Send a message to the content script
   chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
     if (tabs.length > 0) {

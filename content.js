@@ -1,6 +1,7 @@
 const eventsMap = Object.freeze({
   ADD_INTERVAL: "addInterval",
   RESET_INTERVALS: "resetIntervals",
+  CHANGE_INTERVAL: "changeInterval",
 });
 
 const defaultPlayerStorageData = {
@@ -13,6 +14,9 @@ chrome.runtime.onMessage.addListener(function(message) {
   switch (type) {
     case eventsMap.ADD_INTERVAL:
       addInterval(data);
+      break;
+    case eventsMap.CHANGE_INTERVAL:
+      changeInterval(data);
       break;
     case eventsMap.RESET_INTERVALS:
       resetIntervals();
@@ -142,8 +146,14 @@ function addInterval(newInterval) {
   listenToVideoTimeUpdate()
 }
 
+function changeInterval({ startTimeSec }) {
+  const videoPlayer = getVideoPlayerElement()
+  if (!videoPlayer) return
+  videoPlayer.currentTime = startTimeSec;
+  calculateNewIntervalIndex()
+}
+
 function resetIntervals() {
-  // Remove the timeupdate event listener to stop the loop
   const videoPlayer = getVideoPlayerElement()
   if (videoPlayer) {
     stopListenToVideoTimeUpdate();
@@ -154,7 +164,7 @@ function resetIntervals() {
   chrome.storage.local.set({ playerStorageData });
 }
 
-// Listen for page unload to clear the intervals
+// Listen for page unload to clear the storage
 window.addEventListener("unload", function() {
   chrome.storage.local.remove("playerStorageData");
 });
