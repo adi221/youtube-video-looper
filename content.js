@@ -1,17 +1,21 @@
 const eventsMap = Object.freeze({
-  START_LOOP: "startLoop",
-  STOP_LOOP: "stopLoop",
+  ADD_INTERVAL: "addInterval",
+  RESET_INTERVALS: "resetIntervals",
 });
 
+const defaultPlayerStorageData = {
+  intervals: [],
+};
+
 // Listen for messages from the background script
-chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(message) {
   const { type, data } = message;
   switch (type) {
-    case eventsMap.START_LOOP:
-      startLoop(data);
+    case eventsMap.ADD_INTERVAL:
+      addInterval(data);
       break;
-    case eventsMap.STOP_LOOP:
-      stopLoop();
+    case eventsMap.RESET_INTERVALS:
+      resetIntervals();
       break;
     default:
       break;
@@ -60,11 +64,12 @@ function deepCopy(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
-const defaultPlayerStorageData = {
-  intervals: [],
-};
+function getVideoPlayerElement() {
+  return document.getElementsByTagName("video")[0];
+}
 
 let playerStorageData = deepCopy(defaultPlayerStorageData)
+let currentIntervalIndex = -1
 
 // Load the data from the storage
 chrome.storage.local.get(["playerStorageData"], function(result) {
@@ -73,36 +78,75 @@ chrome.storage.local.get(["playerStorageData"], function(result) {
   }
 });
 
-
-function startLoop(data) {
-  const { startTimeSec: startTime, endTimeSec: endTime } = data;
-  const videoPlayer = document.getElementsByTagName("video")[0];
-  if (!videoPlayer) return
-  const videoLength = videoPlayer.duration;
-  if (endTime > videoLength) {
-    alert(`End time must be less than video length (${formatVideoLengthInSeconds(videoLength)})`);
-    return;
-  }
-  // Set the start time of the loop
-  videoPlayer.currentTime = startTime;
-  // When the video reaches the end time, go back to the start time
-  videoPlayer.addEventListener("timeupdate", function() {
-    if (videoPlayer.currentTime >= endTime) {
-      videoPlayer.currentTime = startTime;
-    }
-  });
-
-  // Add the interval to the storage with mergeIntervals
-  const newIntervals = [...playerStorageData.intervals, data]
-  playerStorageData.intervals = mergeIntervals(newIntervals)
-  chrome.storage.local.set({ playerStorageData });
+function isTimeInInterval(time, interval) {
+  return time >= interval.startTimeSec && time <= interval.endTimeSec
 }
 
-function stopLoop() {
+function calculateNewIntervalIndex() {
+  const videoPlayer = getVideoPlayerElement()
+  if (!videoPlayer) return
+  const { intervals } = playerStorageData
+  currentIntervalIndex = intervals.findIndex(interval => isTimeInInterval(videoPlayer.currentTime, interval))
+}
+
+function addIntervalToList(newInterval) {
+  const newIntervals = [...playerStorageData.intervals, newInterval]
+  playerStorageData.intervals = mergeIntervals(newIntervals)
+  chrome.storage.local.set({ playerStorageData });
+  calculateNewIntervalIndex()
+}
+
+function onVideoTimeUpdate() {
+  const videoPlayer = getVideoPlayerElement()
+  if (!videoPlayer) return
+  // If time is interval time, do nothing
+  // If time is greater than interval time, go to next interval
+  const { intervals } = playerStorageData
+  if (!intervals.length) return stopListenToVideoTimeUpdate()
+  if (currentIntervalIndex === -1) {
+    currentIntervalIndex = 0
+  }
+  const currentInterval = intervals[currentIntervalIndex]
+  if (isTimeInInterval(videoPlayer.currentTime, currentInterval)) return
+  if (videoPlayer.currentTime >= currentInterval.endTimeSec) {
+    currentIntervalIndex = (currentIntervalIndex + 1) % intervals.length
+    const { startTimeSec } = intervals[currentIntervalIndex]
+    videoPlayer.currentTime = startTimeSec;
+  }
+}
+
+function listenToVideoTimeUpdate() {
+  const videoPlayer = getVideoPlayerElement()
+  if (!videoPlayer) return
+  // Ensure that we don't have multiple listeners
+  stopListenToVideoTimeUpdate()
+  videoPlayer.addEventListener("timeupdate", onVideoTimeUpdate);
+}
+
+function stopListenToVideoTimeUpdate() {
+  const videoPlayer = getVideoPlayerElement()
+  if (!videoPlayer) return
+  videoPlayer.removeEventListener("timeupdate", onVideoTimeUpdate);
+}
+
+function addInterval(newInterval) {
+  const videoPlayer = getVideoPlayerElement()
+  if (!videoPlayer) return
+  const { endTimeSec } = newInterval;
+  const videoLengthSec = videoPlayer.duration;
+  if (endTimeSec > videoLengthSec) {
+    alert(`End time must be less than video length (${formatVideoLengthInSeconds(videoLengthSec)})`);
+    return;
+  }
+  addIntervalToList(newInterval)
+  listenToVideoTimeUpdate()
+}
+
+function resetIntervals() {
   // Remove the timeupdate event listener to stop the loop
-  const videoPlayer = document.getElementsByTagName("video")[0];
+  const videoPlayer = getVideoPlayerElement()
   if (videoPlayer) {
-    videoPlayer.removeEventListener("timeupdate", null);
+    stopListenToVideoTimeUpdate();
   }
 
   // Clear the intervals from the storage

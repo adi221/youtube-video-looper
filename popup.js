@@ -1,12 +1,12 @@
 const eventsMap = Object.freeze({
-  START_LOOP: "startLoop",
-  STOP_LOOP: "stopLoop",
+  ADD_INTERVAL: "addInterval",
+  RESET_INTERVALS: "resetIntervals",
 });
 
 const VALID_TIME_INPUT_REGEX = /^(\d{1,2}:)?([0-5]?[0-9]:)?[0-5]?[0-9]$/;
 const YOUTUBE_WATCH_REGEX = /^https?:\/\/(www\.)?youtube\.com\/watch/;
 
-// Check if the current window is youtube or youtube music
+// Check if the current window is youtube watch
 chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
   const url = tabs[0].url;
   const isYoutubeWatchPage = YOUTUBE_WATCH_REGEX.test(url);
@@ -18,6 +18,13 @@ chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     document.body.appendChild(div);
 
     document.querySelector('form').style.display = 'none';
+  }
+});
+
+// Load the data from the storage
+chrome.storage.local.get(["playerStorageData"], function(result) {
+  if (result.playerStorageData) {
+    renderTimeIntervals(result.playerStorageData.intervals);
   }
 });
 
@@ -60,12 +67,12 @@ function onLoopButtonClick(e) {
     alert("Start time must be before end time.");
     return;
   }
-  chrome.runtime.sendMessage({ type: eventsMap.START_LOOP, data: { startTimeSec, endTimeSec, startTimeText, endTimeText  } });
+  chrome.runtime.sendMessage({ type: eventsMap.ADD_INTERVAL, data: { startTimeSec, endTimeSec, startTimeText, endTimeText  } });
 }
 
 function onResetButtonClick(e) {
   e.preventDefault();
-  chrome.runtime.sendMessage({ type: eventsMap.STOP_LOOP });
+  chrome.runtime.sendMessage({ type: eventsMap.RESET_INTERVALS });
 }
 
 function renderTimeIntervals(intervals) {
