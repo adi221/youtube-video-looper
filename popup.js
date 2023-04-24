@@ -1,6 +1,7 @@
 const eventsMap = Object.freeze({
   ADD_INTERVAL: "addInterval",
   RESET_INTERVALS: "resetIntervals",
+  CHANGE_INTERVAL: "changeInterval",
 });
 
 const VALID_TIME_INPUT_REGEX = /^(\d{1,2}:)?([0-5]?[0-9]:)?[0-5]?[0-9]$/;
@@ -75,11 +76,17 @@ function onResetButtonClick(e) {
   chrome.runtime.sendMessage({ type: eventsMap.RESET_INTERVALS });
 }
 
+function changeInterval(e, startTimeSec) {
+  e.preventDefault();
+  chrome.runtime.sendMessage({ type: eventsMap.CHANGE_INTERVAL, data: { startTimeSec } });
+}
+
 function renderTimeIntervals(intervals) {
   const ul = document.getElementById("timeIntervals");
   ul.innerHTML = "";
-  intervals.forEach(({ startTimeText, endTimeText }) => {
+  intervals.forEach(({ startTimeText, endTimeText, startTimeSec }) => {
     const li = document.createElement("li");
+    li.onclick = e => changeInterval(e, startTimeSec)
     li.innerHTML = `${startTimeText} - ${endTimeText}`;
     ul.appendChild(li);
   });
