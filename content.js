@@ -4,9 +4,10 @@ const eventsMap = Object.freeze({
   PLAY_INTERVAL: "playInterval",
 });
 
-const defaultPlayerStorageData = {
+const DEFAULT_PLAYER_STORAGE_DATA = {
   intervals: [],
 };
+const DEFAULT_CURRENT_INTERVAL_INDEX = -1;  
 
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener(function(message) {
@@ -72,8 +73,8 @@ function getVideoPlayerElement() {
   return document.getElementsByTagName("video")[0];
 }
 
-let playerStorageData = deepCopy(defaultPlayerStorageData)
-let currentIntervalIndex = -1
+let playerStorageData = deepCopy(DEFAULT_PLAYER_STORAGE_DATA)
+let currentIntervalIndex = DEFAULT_CURRENT_INTERVAL_INDEX
 
 // Load the data from the storage
 chrome.storage.local.get(["playerStorageData"], function(result) {
@@ -107,16 +108,17 @@ function onVideoTimeUpdate() {
   // If time is greater than interval time, go to next interval
   const { intervals } = playerStorageData
   if (!intervals.length) return stopListenToVideoTimeUpdate()
-  if (currentIntervalIndex === -1) {
+  // If we increase interval from -1 to 0 now, we should not increase it to 1 if time is not in interval
+  let shouldChangeToNextIntervalIfOutOfRange = true
+  if (currentIntervalIndex === DEFAULT_CURRENT_INTERVAL_INDEX) {
     currentIntervalIndex = 0
+    shouldChangeToNextIntervalIfOutOfRange = false
   }
   const currentInterval = intervals[currentIntervalIndex]
   if (isTimeInInterval(videoPlayer.currentTime, currentInterval)) return
-  if (videoPlayer.currentTime >= currentInterval.endTimeSec) {
-    currentIntervalIndex = (currentIntervalIndex + 1) % intervals.length
-    const { startTimeSec } = intervals[currentIntervalIndex]
-    videoPlayer.currentTime = startTimeSec;
-  }
+  currentIntervalIndex = shouldChangeToNextIntervalIfOutOfRange ? (currentIntervalIndex + 1) % intervals.length : currentIntervalIndex
+  const { startTimeSec } = intervals[currentIntervalIndex]
+  videoPlayer.currentTime = startTimeSec;
 }
 
 function listenToVideoTimeUpdate() {
@@ -160,7 +162,8 @@ function resetIntervals() {
   }
 
   // Clear the intervals from the storage
-  playerStorageData = deepCopy(defaultPlayerStorageData);
+  playerStorageData = deepCopy(DEFAULT_PLAYER_STORAGE_DATA);
+  currentIntervalIndex = DEFAULT_CURRENT_INTERVAL_INDEX
   chrome.storage.local.set({ playerStorageData });
 }
 
