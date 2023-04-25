@@ -1,7 +1,7 @@
 const eventsMap = Object.freeze({
   ADD_INTERVAL: "addInterval",
   RESET_INTERVALS: "resetIntervals",
-  CHANGE_INTERVAL: "changeInterval",
+  PLAY_INTERVAL: "playInterval",
 });
 
 const defaultPlayerStorageData = {
@@ -15,8 +15,8 @@ chrome.runtime.onMessage.addListener(function(message) {
     case eventsMap.ADD_INTERVAL:
       addInterval(data);
       break;
-    case eventsMap.CHANGE_INTERVAL:
-      changeInterval(data);
+    case eventsMap.PLAY_INTERVAL:
+      playInterval(data);
       break;
     case eventsMap.RESET_INTERVALS:
       resetIntervals();
@@ -146,7 +146,7 @@ function addInterval(newInterval) {
   listenToVideoTimeUpdate()
 }
 
-function changeInterval({ startTimeSec }) {
+function playInterval({ startTimeSec }) {
   const videoPlayer = getVideoPlayerElement()
   if (!videoPlayer) return
   videoPlayer.currentTime = startTimeSec;

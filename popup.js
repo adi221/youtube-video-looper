@@ -1,7 +1,7 @@
 const eventsMap = Object.freeze({
   ADD_INTERVAL: "addInterval",
   RESET_INTERVALS: "resetIntervals",
-  CHANGE_INTERVAL: "changeInterval",
+  PLAY_INTERVAL: "playInterval",
 });
 
 const VALID_TIME_INPUT_REGEX = /^(\d{1,2}:)?([0-5]?[0-9]:)?[0-5]?[0-9]$/;
@@ -78,7 +78,7 @@ function onResetButtonClick(e) {
 
 function changeInterval(e, startTimeSec) {
   e.preventDefault();
-  chrome.runtime.sendMessage({ type: eventsMap.CHANGE_INTERVAL, data: { startTimeSec } });
+  chrome.runtime.sendMessage({ type: eventsMap.PLAY_INTERVAL, data: { startTimeSec } });
 }
 
 function renderTimeIntervals(intervals) {
