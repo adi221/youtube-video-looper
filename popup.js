@@ -1,7 +1,8 @@
 const eventsMap = Object.freeze({
   ADD_INTERVAL: "addInterval",
   RESET_INTERVALS: "resetIntervals",
-  CHANGE_INTERVAL: "changeInterval",
+  PLAY_INTERVAL: "playInterval",
+  DELETE_INTERVAL: "deleteInterval",
 });
 
 const VALID_TIME_INPUT_REGEX = /^(\d{1,2}:)?([0-5]?[0-9]:)?[0-5]?[0-9]$/;
@@ -76,18 +77,75 @@ function onResetButtonClick(e) {
   chrome.runtime.sendMessage({ type: eventsMap.RESET_INTERVALS });
 }
 
-function changeInterval(e, startTimeSec) {
+function playInterval(e, startTimeSec) {
   e.preventDefault();
-  chrome.runtime.sendMessage({ type: eventsMap.CHANGE_INTERVAL, data: { startTimeSec } });
+  chrome.runtime.sendMessage({ type: eventsMap.PLAY_INTERVAL, data: { startTimeSec } });
+}
+
+function deleteInterval(e, startTimeSec) {
+  e.preventDefault();
+  chrome.runtime.sendMessage({ type: eventsMap.DELETE_INTERVAL, data: { startTimeSec } });
 }
 
 function renderTimeIntervals(intervals) {
   const ul = document.getElementById("timeIntervals");
   ul.innerHTML = "";
-  intervals.forEach(({ startTimeText, endTimeText, startTimeSec }) => {
+  intervals.forEach(({ intervalName = 'Interval 1', startTimeText, endTimeText, startTimeSec }) => {
     const li = document.createElement("li");
-    li.onclick = e => changeInterval(e, startTimeSec)
-    li.innerHTML = `${startTimeText} - ${endTimeText}`;
+    li.classList.add("interval-row");
+
+    const infoDiv = document.createElement("div");
+    infoDiv.classList.add("interval-info");
+    li.appendChild(infoDiv);
+
+    const nameSpan = document.createElement("span");
+    nameSpan.classList.add("interval-name");
+    nameSpan.textContent = intervalName;
+    nameSpan.onclick = () => {
+      const nameInput = document.createElement("input");
+      nameInput.classList.add("interval-name-input");
+      nameInput.type = "text";
+      nameInput.value = intervalName;
+      const computedStyle = window.getComputedStyle(nameSpan);
+      nameInput.style.width = computedStyle.width;
+      nameInput.style.fontSize = computedStyle.fontSize;
+      nameInput.onblur = () => {
+        nameInput.replaceWith(nameSpan);
+      };
+      nameInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          console.log('Enter was clicked')
+        }
+      });
+      nameInput.addEventListener("input", () => {
+        nameInput.style.width = nameInput.scrollWidth + "px";
+      });
+      nameSpan.replaceWith(nameInput);
+      nameInput.focus();
+    };
+    infoDiv.appendChild(nameSpan);
+    
+    const timeSpan = document.createElement("span");
+    timeSpan.classList.add("interval-time");
+    timeSpan.textContent = `${startTimeText} - ${endTimeText}`;
+    infoDiv.appendChild(timeSpan);
+
+    const buttonsDiv = document.createElement("div");
+    buttonsDiv.classList.add("interval-buttons");
+    li.appendChild(buttonsDiv);
+
+    const playButton = document.createElement("button");
+    playButton.classList.add("play-interval-button");
+    playButton.innerHTML = '<i class="fa fa-play icon"></i>';
+    playButton.onclick = e => playInterval(e, startTimeSec)
+    buttonsDiv.appendChild(playButton);
+
+    const deleteButton = document.createElement("button");
+    deleteButton.classList.add("delete-interval-button");
+    deleteButton.innerHTML = '<i class="fa fa-trash icon"></i>';
+    deleteButton.onclick = e => deleteInterval(e, startTimeSec)
+    buttonsDiv.appendChild(deleteButton);
+
     ul.appendChild(li);
   });
 }
