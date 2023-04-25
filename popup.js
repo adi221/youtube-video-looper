@@ -2,7 +2,7 @@ const eventsMap = Object.freeze({
   ADD_INTERVAL: "addInterval",
   RESET_INTERVALS: "resetIntervals",
   PLAY_INTERVAL: "playInterval",
-  DELETE_INTERVAL: "deleteInterval",
+  REMOVE_INTERVAL: "removeInterval",
 });
 
 const VALID_TIME_INPUT_REGEX = /^(\d{1,2}:)?([0-5]?[0-9]:)?[0-5]?[0-9]$/;
@@ -82,9 +82,9 @@ function playInterval(e, startTimeSec) {
   chrome.runtime.sendMessage({ type: eventsMap.PLAY_INTERVAL, data: { startTimeSec } });
 }
 
-function deleteInterval(e, startTimeSec) {
+function removeInterval(e, startTimeSec) {
   e.preventDefault();
-  chrome.runtime.sendMessage({ type: eventsMap.DELETE_INTERVAL, data: { startTimeSec } });
+  chrome.runtime.sendMessage({ type: eventsMap.REMOVE_INTERVAL, data: { startTimeSec } });
 }
 
 function renderTimeIntervals(intervals) {
@@ -143,7 +143,7 @@ function renderTimeIntervals(intervals) {
     const deleteButton = document.createElement("button");
     deleteButton.classList.add("delete-interval-button");
     deleteButton.innerHTML = '<i class="fa fa-trash icon"></i>';
-    deleteButton.onclick = e => deleteInterval(e, startTimeSec)
+    deleteButton.onclick = e => removeInterval(e, startTimeSec)
     buttonsDiv.appendChild(deleteButton);
 
     ul.appendChild(li);
