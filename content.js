@@ -3,12 +3,14 @@ const eventsMap = Object.freeze({
   RESET_INTERVALS: "resetIntervals",
   PLAY_INTERVAL: "playInterval",
   REMOVE_INTERVAL: "removeInterval",
+  TOGGLE_IS_ENABLED: "toggleIsEnabled",
 });
 
 const DEFAULT_PLAYER_STORAGE_DATA = {
+  isEnabled: true,
   intervals: [],
 };
-const DEFAULT_CURRENT_INTERVAL_INDEX = -1;  
+const DEFAULT_CURRENT_INTERVAL_INDEX = -1;
 
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener(function(message) {
@@ -25,6 +27,9 @@ chrome.runtime.onMessage.addListener(function(message) {
       break;
     case eventsMap.REMOVE_INTERVAL:
       removeInterval(data);
+      break;
+    case eventsMap.TOGGLE_IS_ENABLED:
+      toggleIsEnabled(data);
       break;
     default:
       break;
@@ -80,13 +85,6 @@ function getVideoPlayerElement() {
 let playerStorageData = deepCopy(DEFAULT_PLAYER_STORAGE_DATA)
 let currentIntervalIndex = DEFAULT_CURRENT_INTERVAL_INDEX
 
-// Load the data from the storage
-chrome.storage.local.get(["playerStorageData"], function(result) {
-  if (result.playerStorageData) {
-    playerStorageData = result.playerStorageData;
-  }
-});
-
 function isTimeInInterval(time, interval) {
   return time >= interval.startTimeSec && time <= interval.endTimeSec
 }
@@ -100,15 +98,13 @@ function calculateNewIntervalIndex() {
 
 function addIntervalToList(newInterval) {
   const newIntervals = [...playerStorageData.intervals, newInterval]
-  playerStorageData.intervals = mergeIntervals(newIntervals)
-  chrome.storage.local.set({ playerStorageData });
+  setPlayerStorageData({ ...playerStorageData, intervals: mergeIntervals(newIntervals) });
   calculateNewIntervalIndex()
 }
 
 function removeIntervalFromList({ startTimeSec }) {
   const updatedIntervals = playerStorageData.intervals.filter(interval => interval.startTimeSec !== startTimeSec)
-  playerStorageData.intervals = updatedIntervals
-  chrome.storage.local.set({ playerStorageData });
+  setPlayerStorageData({ ...playerStorageData, intervals: updatedIntervals });
   calculateNewIntervalIndex()
 }
 
@@ -157,6 +153,9 @@ function addInterval(newInterval) {
   }
   addIntervalToList(newInterval)
   listenToVideoTimeUpdate()
+  if (!playerStorageData.isEnabled) {
+    setPlayerStorageData({ ...playerStorageData, isEnabled: true });
+  }
 }
 
 function removeInterval({ startTimeSec }) {
@@ -170,15 +169,25 @@ function playInterval({ startTimeSec }) {
   calculateNewIntervalIndex()
 }
 
+function toggleIsEnabled({ isEnabled }) {
+  if (isEnabled) listenToVideoTimeUpdate();
+  else stopListenToVideoTimeUpdate();
+
+  setPlayerStorageData({ ...playerStorageData, isEnabled });
+}
+
 function resetIntervals() {
   const videoPlayer = getVideoPlayerElement()
   if (videoPlayer) {
     stopListenToVideoTimeUpdate();
   }
-
-  // Clear the intervals from the storage
-  playerStorageData = deepCopy(DEFAULT_PLAYER_STORAGE_DATA);
+  
+  setPlayerStorageData(deepCopy(DEFAULT_PLAYER_STORAGE_DATA));
   currentIntervalIndex = DEFAULT_CURRENT_INTERVAL_INDEX
+}
+
+function setPlayerStorageData(newPlayerStorageData) {
+  playerStorageData = newPlayerStorageData;
   chrome.storage.local.set({ playerStorageData });
 }
 
