@@ -67,8 +67,7 @@ input[type="text"] {
   width: 100%;
 }
 
-#loopButton,
-#resetButton {
+.buttons button {
   background-color: #f44336;
   border: none;
   color: white;
@@ -81,9 +80,13 @@ input[type="text"] {
   cursor: pointer;
 }
 
-#loopButton:hover,
-#resetButton:hover {
+.buttons button:hover {
   background-color: #e53935;
+}
+
+.buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 #timeIntervals {

@@ -3,6 +3,7 @@ const eventsMap = Object.freeze({
   RESET_INTERVALS: "resetIntervals",
   PLAY_INTERVAL: "playInterval",
   REMOVE_INTERVAL: "removeInterval",
+  TOGGLE_IS_ENABLED: "toggleIsEnabled",
 });
 
 const VALID_TIME_INPUT_REGEX = /^(\d{1,2}:)?([0-5]?[0-9]:)?[0-5]?[0-9]$/;
@@ -33,14 +34,20 @@ chrome.storage.local.get(["playerStorageData"], function(result) {
 /* Chrome listeners */
 chrome.storage.onChanged.addListener(function(changes, namespace) {
   if (namespace == "local" && changes.playerStorageData) {
-    const { intervals } = changes.playerStorageData.newValue;
+    const { intervals, isEnabled } = changes.playerStorageData.newValue;
     renderTimeIntervals(intervals);
+    updateToggleIsEnabledButtonAttributes(isEnabled, intervals.length);
   }
 });
 
 /* DOM elements and event listeners */
-document.getElementById("loopButton").addEventListener("click", onLoopButtonClick);
-document.getElementById("resetButton").addEventListener("click", onResetButtonClick);
+const addIntervalButton = document.getElementById("addIntervalButton");
+const resetIntervalsButton = document.getElementById("resetButton");
+const toggleIsEnabledButton = document.getElementById("toggleIsEnabledButton");
+
+addIntervalButton.addEventListener("click", onAddIntervalClick);
+resetIntervalsButton.addEventListener("click", onResetButtonClick);
+toggleIsEnabledButton.addEventListener("click", onToggleIsEnabledClick);
 
 function isInputValid(text) {
   return VALID_TIME_INPUT_REGEX.test(text);
@@ -53,7 +60,7 @@ function getTimeInSeconds(timeStr) {
   return parseInt(h) * 60 * 60 + parseInt(m) * 60 + parseInt(s)
 }
 
-function onLoopButtonClick(e) {
+function onAddIntervalClick(e) {
   e.preventDefault();
   const startTimeText = document.getElementById("startTimeInput").value;
   const endTimeText = document.getElementById("endTimeInput").value;
@@ -75,6 +82,18 @@ function onLoopButtonClick(e) {
 function onResetButtonClick(e) {
   e.preventDefault();
   chrome.runtime.sendMessage({ type: eventsMap.RESET_INTERVALS });
+}
+
+function onToggleIsEnabledClick(e) {
+  e.preventDefault();
+  const isCurrentlyEnabled = toggleIsEnabledButton.getAttribute('data-is-enabled') === 'true';
+  chrome.runtime.sendMessage({ type: eventsMap.TOGGLE_IS_ENABLED, data: { isEnabled: !isCurrentlyEnabled } });
+}
+
+function updateToggleIsEnabledButtonAttributes(isEnabled, intervalsAmount) {
+  toggleIsEnabledButton.disabled = intervalsAmount === 0;
+  toggleIsEnabledButton.setAttribute('data-is-enabled', isEnabled ? 'true' : 'false');
+  toggleIsEnabledButton.textContent = isEnabled ? 'Disable' : 'Enable';
 }
 
 function playInterval(e, startTimeSec) {
