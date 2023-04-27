@@ -147,13 +147,11 @@ function renderTimeIntervals(intervals) {
     const li = document.createElement("li");
     li.classList.add("interval-row");
 
-    const infoDiv = document.createElement("div");
-    infoDiv.classList.add("interval-info");
-    li.appendChild(infoDiv);
-
-    const nameSpan = document.createElement("span");
+    const nameSpan = document.createElement("p");
     nameSpan.classList.add("interval-name");
     nameSpan.textContent = title;
+    nameSpan.title = title;
+
     nameSpan.onclick = () => {
       const nameInput = document.createElement("input");
       nameInput.classList.add("interval-name-input");
@@ -177,12 +175,22 @@ function renderTimeIntervals(intervals) {
       nameSpan.replaceWith(nameInput);
       nameInput.focus();
     };
-    infoDiv.appendChild(nameSpan);
+
+    nameSpan.addEventListener('mouseover', () => {
+      if (nameSpan.offsetWidth < nameSpan.scrollWidth) {
+        nameSpan.classList.add("truncated");
+      }
+    });
+    nameSpan.addEventListener('mouseout', () => {
+      nameSpan.classList.remove("truncated");
+    });
+
+    li.appendChild(nameSpan);
     
     const timeSpan = document.createElement("span");
     timeSpan.classList.add("interval-time");
     timeSpan.textContent = `${startTimeText} - ${endTimeText}`;
-    infoDiv.appendChild(timeSpan);
+    li.appendChild(timeSpan);
 
     const buttonsDiv = document.createElement("div");
     buttonsDiv.classList.add("interval-buttons");
