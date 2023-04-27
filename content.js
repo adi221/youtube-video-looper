@@ -1,5 +1,6 @@
 const eventsMap = Object.freeze({
   ADD_INTERVAL: "addInterval",
+  UPDATE_INTERVAL: "updateInterval",
   RESET_INTERVALS: "resetIntervals",
   PLAY_INTERVAL: "playInterval",
   REMOVE_INTERVAL: "removeInterval",
@@ -18,6 +19,9 @@ chrome.runtime.onMessage.addListener(function(message) {
   switch (type) {
     case eventsMap.ADD_INTERVAL:
       addInterval(data);
+      break;
+    case eventsMap.UPDATE_INTERVAL:
+      updateInterval(data);
       break;
     case eventsMap.PLAY_INTERVAL:
       playInterval(data);
@@ -47,6 +51,8 @@ function mergeIntervals(intervals) {
         prev.endTimeSec = curr.endTimeSec
         prev.endTimeText = curr.endTimeText
       }
+      // The title of the interval with the earliest createdAt is kept
+      prev.title = prev.createdAt < curr.createdAt ? prev.title : curr.title
     } else {
       res.push(curr)
     }
@@ -102,8 +108,8 @@ function addIntervalToList(newInterval) {
   calculateNewIntervalIndex()
 }
 
-function removeIntervalFromList({ startTimeSec }) {
-  const updatedIntervals = playerStorageData.intervals.filter(interval => interval.startTimeSec !== startTimeSec)
+function removeIntervalFromList({ id }) {
+  const updatedIntervals = playerStorageData.intervals.filter(interval => interval.id !== id)
   setPlayerStorageData({ ...playerStorageData, intervals: updatedIntervals });
   calculateNewIntervalIndex()
 }
@@ -158,14 +164,27 @@ function addInterval(newInterval) {
   }
 }
 
-function removeInterval({ startTimeSec }) {
-  removeIntervalFromList({ startTimeSec })
+function updateInterval(newIntervalData) {
+  const updatedIntervals = playerStorageData.intervals.map(interval => {
+    if (interval.id === newIntervalData.id) {
+      return { ...interval, ...newIntervalData }
+    }
+    return interval
+  })
+  setPlayerStorageData({ ...playerStorageData, intervals: updatedIntervals });
+  calculateNewIntervalIndex()
 }
 
-function playInterval({ startTimeSec }) {
+function removeInterval({ id }) {
+  removeIntervalFromList({ id })
+}
+
+function playInterval({ id }) {
   const videoPlayer = getVideoPlayerElement()
   if (!videoPlayer) return
-  videoPlayer.currentTime = startTimeSec;
+  const interval = playerStorageData.intervals.find(interval => interval.id === id)
+  if (!interval) return
+  videoPlayer.currentTime = interval.startTimeSec;
   calculateNewIntervalIndex()
 }
 
