@@ -107,12 +107,20 @@ input[type="text"] {
   align-items: center;
   padding: 0.25rem 0;
   border-bottom: 1px solid #ddd;
+  position: relative;
 }
 
 .interval-info {
   display: flex;
   align-items: center;
   flex: 1;
+}
+
+.interval-time {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .interval-buttons {
@@ -123,7 +131,25 @@ input[type="text"] {
 
 .interval-name {
   cursor: pointer;
-  margin-right: 1rem;
+  max-width: 6.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
+}
+
+.truncated:hover::before {
+  content: attr(title);
+  position: absolute;
+  z-index: 1;
+  background-color: #000;
+  color: #fff;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 14px;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .interval-name-input {
@@ -133,6 +159,7 @@ input[type="text"] {
   outline: none;
   margin-right: 1rem;
   font-size: inherit;
+  max-width: 6.5rem;
 }
 
 .play-interval-button,

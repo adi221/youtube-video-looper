@@ -1,5 +1,6 @@
 const eventsMap = Object.freeze({
   ADD_INTERVAL: "addInterval",
+  UPDATE_INTERVAL: "updateInterval",
   RESET_INTERVALS: "resetIntervals",
   PLAY_INTERVAL: "playInterval",
   REMOVE_INTERVAL: "removeInterval",
@@ -8,6 +9,20 @@ const eventsMap = Object.freeze({
 
 const VALID_TIME_INPUT_REGEX = /^(\d{1,2}:)?([0-5]?[0-9]:)?[0-5]?[0-9]$/;
 const YOUTUBE_WATCH_REGEX = /^https?:\/\/(www\.)?youtube\.com\/watch/;
+
+let idCounter = 1;
+
+/**
+ * interface Interval {
+ *  id: number;
+ *  startTimeSec: number;
+ *  endTimeSec: number;
+ *  startTimeText: string;
+ *  endTimeText: string;
+ *  title: string;
+ *  createdAt: string;
+ * }
+ */
 
 // Check if the current window is youtube watch
 chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
@@ -60,6 +75,10 @@ function getTimeInSeconds(timeStr) {
   return parseInt(h) * 60 * 60 + parseInt(m) * 60 + parseInt(s)
 }
 
+function formatTimeText(timeStr) {
+  return timeStr.split(':').map(t => t.padStart(2, '0')).join(':')
+}
+
 function onAddIntervalClick(e) {
   e.preventDefault();
   const startTimeText = document.getElementById("startTimeInput").value;
@@ -76,7 +95,17 @@ function onAddIntervalClick(e) {
     alert("Start time must be before end time.");
     return;
   }
-  chrome.runtime.sendMessage({ type: eventsMap.ADD_INTERVAL, data: { startTimeSec, endTimeSec, startTimeText, endTimeText  } });
+  const data = { 
+    id: idCounter,
+    startTimeSec, 
+    endTimeSec, 
+    startTimeText: formatTimeText(startTimeText), 
+    endTimeText: formatTimeText(endTimeText), 
+    title: `Interval ${idCounter}`,
+    createdAt: new Date().toISOString(),
+  };
+  idCounter++;
+  chrome.runtime.sendMessage({ type: eventsMap.ADD_INTERVAL, data });
 }
 
 function onResetButtonClick(e) {
@@ -96,44 +125,48 @@ function updateToggleIsEnabledButtonAttributes(isEnabled, intervalsAmount) {
   toggleIsEnabledButton.textContent = isEnabled ? 'Disable' : 'Enable';
 }
 
-function playInterval(e, startTimeSec) {
+function playInterval(e, id) {
   e.preventDefault();
-  chrome.runtime.sendMessage({ type: eventsMap.PLAY_INTERVAL, data: { startTimeSec } });
+  chrome.runtime.sendMessage({ type: eventsMap.PLAY_INTERVAL, data: { id } });
 }
 
-function removeInterval(e, startTimeSec) {
+function removeInterval(e, id) {
   e.preventDefault();
-  chrome.runtime.sendMessage({ type: eventsMap.REMOVE_INTERVAL, data: { startTimeSec } });
+  chrome.runtime.sendMessage({ type: eventsMap.REMOVE_INTERVAL, data: { id } });
+}
+
+function updateInterval(e, id, title) {
+  e.preventDefault();
+  chrome.runtime.sendMessage({ type: eventsMap.UPDATE_INTERVAL, data: { id, title } });
 }
 
 function renderTimeIntervals(intervals) {
   const ul = document.getElementById("timeIntervals");
   ul.innerHTML = "";
-  intervals.forEach(({ intervalName = 'Interval 1', startTimeText, endTimeText, startTimeSec }) => {
+  intervals.forEach(({ id, title, startTimeText, endTimeText }) => {
     const li = document.createElement("li");
     li.classList.add("interval-row");
 
-    const infoDiv = document.createElement("div");
-    infoDiv.classList.add("interval-info");
-    li.appendChild(infoDiv);
-
-    const nameSpan = document.createElement("span");
+    const nameSpan = document.createElement("p");
     nameSpan.classList.add("interval-name");
-    nameSpan.textContent = intervalName;
+    nameSpan.textContent = title;
+    nameSpan.title = title;
+
     nameSpan.onclick = () => {
       const nameInput = document.createElement("input");
       nameInput.classList.add("interval-name-input");
       nameInput.type = "text";
-      nameInput.value = intervalName;
+      nameInput.value = title;
       const computedStyle = window.getComputedStyle(nameSpan);
       nameInput.style.width = computedStyle.width;
       nameInput.style.fontSize = computedStyle.fontSize;
-      nameInput.onblur = () => {
+      nameInput.onblur = e => {
+        updateInterval(e, id, nameInput.value);
         nameInput.replaceWith(nameSpan);
       };
-      nameInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-          console.log('Enter was clicked')
+      nameInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          updateInterval(e, id, nameInput.value);
         }
       });
       nameInput.addEventListener("input", () => {
@@ -142,28 +175,38 @@ function renderTimeIntervals(intervals) {
       nameSpan.replaceWith(nameInput);
       nameInput.focus();
     };
-    infoDiv.appendChild(nameSpan);
+
+    nameSpan.addEventListener('mouseover', () => {
+      if (nameSpan.offsetWidth < nameSpan.scrollWidth) {
+        nameSpan.classList.add("truncated");
+      }
+    });
+    nameSpan.addEventListener('mouseout', () => {
+      nameSpan.classList.remove("truncated");
+    });
+
+    li.appendChild(nameSpan);
     
     const timeSpan = document.createElement("span");
     timeSpan.classList.add("interval-time");
     timeSpan.textContent = `${startTimeText} - ${endTimeText}`;
-    infoDiv.appendChild(timeSpan);
+    li.appendChild(timeSpan);
 
-    const buttonsDiv = document.createElement("div");
-    buttonsDiv.classList.add("interval-buttons");
-    li.appendChild(buttonsDiv);
+    const buttonsContainer = document.createElement("div");
+    buttonsContainer.classList.add("interval-buttons");
+    li.appendChild(buttonsContainer);
 
     const playButton = document.createElement("button");
     playButton.classList.add("play-interval-button");
     playButton.innerHTML = '<i class="fa fa-play icon"></i>';
-    playButton.onclick = e => playInterval(e, startTimeSec)
-    buttonsDiv.appendChild(playButton);
+    playButton.onclick = e => playInterval(e, id)
+    buttonsContainer.appendChild(playButton);
 
     const deleteButton = document.createElement("button");
     deleteButton.classList.add("delete-interval-button");
     deleteButton.innerHTML = '<i class="fa fa-trash icon"></i>';
-    deleteButton.onclick = e => removeInterval(e, startTimeSec)
-    buttonsDiv.appendChild(deleteButton);
+    deleteButton.onclick = e => removeInterval(e, id)
+    buttonsContainer.appendChild(deleteButton);
 
     ul.appendChild(li);
   });
