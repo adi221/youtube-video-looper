@@ -75,6 +75,10 @@ function getTimeInSeconds(timeStr) {
   return parseInt(h) * 60 * 60 + parseInt(m) * 60 + parseInt(s)
 }
 
+function formatTimeText(timeStr) {
+  return timeStr.split(':').map(t => t.padStart(2, '0')).join(':')
+}
+
 function onAddIntervalClick(e) {
   e.preventDefault();
   const startTimeText = document.getElementById("startTimeInput").value;
@@ -95,8 +99,8 @@ function onAddIntervalClick(e) {
     id: idCounter,
     startTimeSec, 
     endTimeSec, 
-    startTimeText, 
-    endTimeText, 
+    startTimeText: formatTimeText(startTimeText), 
+    endTimeText: formatTimeText(endTimeText), 
     title: `Interval ${idCounter}`,
     createdAt: new Date().toISOString(),
   };
