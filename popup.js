@@ -192,21 +192,21 @@ function renderTimeIntervals(intervals) {
     timeSpan.textContent = `${startTimeText} - ${endTimeText}`;
     li.appendChild(timeSpan);
 
-    const buttonsDiv = document.createElement("div");
-    buttonsDiv.classList.add("interval-buttons");
-    li.appendChild(buttonsDiv);
+    const buttonsContainer = document.createElement("div");
+    buttonsContainer.classList.add("interval-buttons");
+    li.appendChild(buttonsContainer);
 
     const playButton = document.createElement("button");
     playButton.classList.add("play-interval-button");
     playButton.innerHTML = '<i class="fa fa-play icon"></i>';
     playButton.onclick = e => playInterval(e, id)
-    buttonsDiv.appendChild(playButton);
+    buttonsContainer.appendChild(playButton);
 
     const deleteButton = document.createElement("button");
     deleteButton.classList.add("delete-interval-button");
     deleteButton.innerHTML = '<i class="fa fa-trash icon"></i>';
     deleteButton.onclick = e => removeInterval(e, id)
-    buttonsDiv.appendChild(deleteButton);
+    buttonsContainer.appendChild(deleteButton);
 
     ul.appendChild(li);
   });
