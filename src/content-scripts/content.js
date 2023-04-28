@@ -1,10 +1,10 @@
 const eventsMap = Object.freeze({
-  ADD_INTERVAL: "addInterval",
-  UPDATE_INTERVAL: "updateInterval",
-  RESET_INTERVALS: "resetIntervals",
-  PLAY_INTERVAL: "playInterval",
-  REMOVE_INTERVAL: "removeInterval",
-  TOGGLE_IS_ENABLED: "toggleIsEnabled",
+  ADD_INTERVAL: 'addInterval',
+  UPDATE_INTERVAL: 'updateInterval',
+  RESET_INTERVALS: 'resetIntervals',
+  PLAY_INTERVAL: 'playInterval',
+  REMOVE_INTERVAL: 'removeInterval',
+  TOGGLE_IS_ENABLED: 'toggleIsEnabled',
 });
 
 const DEFAULT_PLAYER_STORAGE_DATA = {
@@ -14,7 +14,7 @@ const DEFAULT_PLAYER_STORAGE_DATA = {
 const DEFAULT_CURRENT_INTERVAL_INDEX = -1;
 
 // Listen for messages from the background script
-chrome.runtime.onMessage.addListener(function(message) {
+chrome.runtime.onMessage.addListener(function (message) {
   const { type, data } = message;
   switch (type) {
     case eventsMap.ADD_INTERVAL:
@@ -41,27 +41,29 @@ chrome.runtime.onMessage.addListener(function(message) {
 });
 
 function mergeIntervals(intervals) {
-  if (intervals.length <= 1) return intervals
-  intervals.sort((a, b) => a.startTimeSec - b.startTimeSec || a.endTimeSec - b.endTimeSec)
-  const res = [intervals[0]]
+  if (intervals.length <= 1) return intervals;
+  intervals.sort(
+    (a, b) => a.startTimeSec - b.startTimeSec || a.endTimeSec - b.endTimeSec,
+  );
+  const res = [intervals[0]];
   for (const curr of intervals) {
-    const prev = res[res.length - 1]
+    const prev = res[res.length - 1];
     if (prev.startTimeSec === curr.startTimeSec || prev.endTimeSec >= curr.startTimeSec) {
       if (prev.endTimeSec < curr.endTimeSec) {
-        prev.endTimeSec = curr.endTimeSec
-        prev.endTimeText = curr.endTimeText
+        prev.endTimeSec = curr.endTimeSec;
+        prev.endTimeText = curr.endTimeText;
       }
       // The title of the interval with the earliest createdAt is kept
-      prev.title = prev.createdAt < curr.createdAt ? prev.title : curr.title
+      prev.title = prev.createdAt < curr.createdAt ? prev.title : curr.title;
     } else {
-      res.push(curr)
+      res.push(curr);
     }
   }
-  return res
+  return res;
 }
 
 function padding2(num) {
-  return num.toString().padStart(2, '0')
+  return num.toString().padStart(2, '0');
 }
 
 function formatVideoLengthInSeconds(videoLengthSeconds) {
@@ -85,80 +87,93 @@ function deepCopy(obj) {
 }
 
 function getVideoPlayerElement() {
-  return document.getElementsByTagName("video")[0];
+  return document.getElementsByTagName('video')[0];
 }
 
-let playerStorageData = deepCopy(DEFAULT_PLAYER_STORAGE_DATA)
-let currentIntervalIndex = DEFAULT_CURRENT_INTERVAL_INDEX
+let playerStorageData = deepCopy(DEFAULT_PLAYER_STORAGE_DATA);
+let currentIntervalIndex = DEFAULT_CURRENT_INTERVAL_INDEX;
 
 function isTimeInInterval(time, interval) {
-  return time >= interval.startTimeSec && time <= interval.endTimeSec
+  return time >= interval.startTimeSec && time <= interval.endTimeSec;
 }
 
 function calculateNewIntervalIndex() {
-  const videoPlayer = getVideoPlayerElement()
-  if (!videoPlayer) return
-  const { intervals } = playerStorageData
-  currentIntervalIndex = intervals.findIndex(interval => isTimeInInterval(videoPlayer.currentTime, interval))
+  const videoPlayer = getVideoPlayerElement();
+  if (!videoPlayer) return;
+  const { intervals } = playerStorageData;
+  currentIntervalIndex = intervals.findIndex(interval =>
+    isTimeInInterval(videoPlayer.currentTime, interval),
+  );
 }
 
 function addIntervalToList(newInterval) {
-  const newIntervals = [...playerStorageData.intervals, newInterval]
-  setPlayerStorageData({ ...playerStorageData, intervals: mergeIntervals(newIntervals) });
-  calculateNewIntervalIndex()
+  const newIntervals = [...playerStorageData.intervals, newInterval];
+  setPlayerStorageData({
+    ...playerStorageData,
+    intervals: mergeIntervals(newIntervals),
+  });
+  calculateNewIntervalIndex();
 }
 
 function removeIntervalFromList({ id }) {
-  const updatedIntervals = playerStorageData.intervals.filter(interval => interval.id !== id)
+  const updatedIntervals = playerStorageData.intervals.filter(
+    interval => interval.id !== id,
+  );
   setPlayerStorageData({ ...playerStorageData, intervals: updatedIntervals });
-  calculateNewIntervalIndex()
+  calculateNewIntervalIndex();
 }
 
 function onVideoTimeUpdate() {
-  const videoPlayer = getVideoPlayerElement()
-  if (!videoPlayer) return
+  const videoPlayer = getVideoPlayerElement();
+  if (!videoPlayer) return;
   // If time is interval time, do nothing
   // If time is greater than interval time, go to next interval
-  const { intervals } = playerStorageData
-  if (!intervals.length) return stopListenToVideoTimeUpdate()
+  const { intervals } = playerStorageData;
+  if (!intervals.length) return stopListenToVideoTimeUpdate();
   // If we increase interval from -1 to 0 now, we should not increase it to 1 if time is not in interval
-  let shouldChangeToNextIntervalIfOutOfRange = true
+  let shouldChangeToNextIntervalIfOutOfRange = true;
   if (currentIntervalIndex === DEFAULT_CURRENT_INTERVAL_INDEX) {
-    currentIntervalIndex = 0
-    shouldChangeToNextIntervalIfOutOfRange = false
+    currentIntervalIndex = 0;
+    shouldChangeToNextIntervalIfOutOfRange = false;
   }
-  const currentInterval = intervals[currentIntervalIndex]
-  if (isTimeInInterval(videoPlayer.currentTime, currentInterval)) return
-  currentIntervalIndex = shouldChangeToNextIntervalIfOutOfRange ? (currentIntervalIndex + 1) % intervals.length : currentIntervalIndex
-  const { startTimeSec } = intervals[currentIntervalIndex]
+  const currentInterval = intervals[currentIntervalIndex];
+  if (isTimeInInterval(videoPlayer.currentTime, currentInterval)) return;
+  currentIntervalIndex = shouldChangeToNextIntervalIfOutOfRange
+    ? (currentIntervalIndex + 1) % intervals.length
+    : currentIntervalIndex;
+  const { startTimeSec } = intervals[currentIntervalIndex];
   videoPlayer.currentTime = startTimeSec;
 }
 
 function listenToVideoTimeUpdate() {
-  const videoPlayer = getVideoPlayerElement()
-  if (!videoPlayer) return
+  const videoPlayer = getVideoPlayerElement();
+  if (!videoPlayer) return;
   // Ensure that we don't have multiple listeners
-  stopListenToVideoTimeUpdate()
-  videoPlayer.addEventListener("timeupdate", onVideoTimeUpdate);
+  stopListenToVideoTimeUpdate();
+  videoPlayer.addEventListener('timeupdate', onVideoTimeUpdate);
 }
 
 function stopListenToVideoTimeUpdate() {
-  const videoPlayer = getVideoPlayerElement()
-  if (!videoPlayer) return
-  videoPlayer.removeEventListener("timeupdate", onVideoTimeUpdate);
+  const videoPlayer = getVideoPlayerElement();
+  if (!videoPlayer) return;
+  videoPlayer.removeEventListener('timeupdate', onVideoTimeUpdate);
 }
 
 function addInterval(newInterval) {
-  const videoPlayer = getVideoPlayerElement()
-  if (!videoPlayer) return
+  const videoPlayer = getVideoPlayerElement();
+  if (!videoPlayer) return;
   const { endTimeSec } = newInterval;
   const videoLengthSec = videoPlayer.duration;
   if (endTimeSec > videoLengthSec) {
-    alert(`End time must be less than video length (${formatVideoLengthInSeconds(videoLengthSec)})`);
+    alert(
+      `End time must be less than video length (${formatVideoLengthInSeconds(
+        videoLengthSec,
+      )})`,
+    );
     return;
   }
-  addIntervalToList(newInterval)
-  listenToVideoTimeUpdate()
+  addIntervalToList(newInterval);
+  listenToVideoTimeUpdate();
   if (!playerStorageData.isEnabled) {
     setPlayerStorageData({ ...playerStorageData, isEnabled: true });
   }
@@ -167,25 +182,25 @@ function addInterval(newInterval) {
 function updateInterval(newIntervalData) {
   const updatedIntervals = playerStorageData.intervals.map(interval => {
     if (interval.id === newIntervalData.id) {
-      return { ...interval, ...newIntervalData }
+      return { ...interval, ...newIntervalData };
     }
-    return interval
-  })
+    return interval;
+  });
   setPlayerStorageData({ ...playerStorageData, intervals: updatedIntervals });
-  calculateNewIntervalIndex()
+  calculateNewIntervalIndex();
 }
 
 function removeInterval({ id }) {
-  removeIntervalFromList({ id })
+  removeIntervalFromList({ id });
 }
 
 function playInterval({ id }) {
-  const videoPlayer = getVideoPlayerElement()
-  if (!videoPlayer) return
-  const interval = playerStorageData.intervals.find(interval => interval.id === id)
-  if (!interval) return
+  const videoPlayer = getVideoPlayerElement();
+  if (!videoPlayer) return;
+  const interval = playerStorageData.intervals.find(interval => interval.id === id);
+  if (!interval) return;
   videoPlayer.currentTime = interval.startTimeSec;
-  calculateNewIntervalIndex()
+  calculateNewIntervalIndex();
 }
 
 function toggleIsEnabled({ isEnabled }) {
@@ -196,13 +211,13 @@ function toggleIsEnabled({ isEnabled }) {
 }
 
 function resetIntervals() {
-  const videoPlayer = getVideoPlayerElement()
+  const videoPlayer = getVideoPlayerElement();
   if (videoPlayer) {
     stopListenToVideoTimeUpdate();
   }
-  
+
   setPlayerStorageData(deepCopy(DEFAULT_PLAYER_STORAGE_DATA));
-  currentIntervalIndex = DEFAULT_CURRENT_INTERVAL_INDEX
+  currentIntervalIndex = DEFAULT_CURRENT_INTERVAL_INDEX;
 }
 
 function setPlayerStorageData(newPlayerStorageData) {
@@ -211,6 +226,6 @@ function setPlayerStorageData(newPlayerStorageData) {
 }
 
 // Listen for page unload to clear the storage
-window.addEventListener("unload", function() {
-  chrome.storage.local.remove("playerStorageData");
+window.addEventListener('unload', function () {
+  chrome.storage.local.remove('playerStorageData');
 });
