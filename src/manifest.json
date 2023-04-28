@@ -5,15 +5,15 @@
   "permissions": ["storage", "tabs", "activeTab"],
   "host_permissions": ["<all_urls>"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "/background/main.js"
   },
   "content_scripts": [
     {
       "matches": ["*://www.youtube.com/*"],
-      "js": ["content.js"]
+      "js": ["/content-scripts/content.js"]
     }
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "/popup/popup.html"
   }
 }
