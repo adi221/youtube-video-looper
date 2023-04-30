@@ -264,5 +264,7 @@ function clearPlayerStorageData() {
   chrome.storage.local.remove('playerStorageData');
 }
 
-// Listen for page unload to clear the storage
-window.addEventListener('unload', clearPlayerStorageData);
+// Listen for page unload / url change inside youtube to clear the storage
+['unload', 'yt-navigate-start'].forEach(eventName =>
+  window.addEventListener(eventName, clearPlayerStorageData),
+);
