@@ -42,16 +42,14 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
 // Load the data from the storage
 chrome.storage.local.get(['playerStorageData'], function (result) {
   if (result.playerStorageData) {
-    renderTimeIntervals(result.playerStorageData.intervals);
+    handleStorageChange(result.playerStorageData);
   }
 });
 
 /* Chrome listeners */
 chrome.storage.onChanged.addListener(function (changes, namespace) {
   if (namespace == 'local' && changes.playerStorageData) {
-    const { intervals, isEnabled } = changes.playerStorageData.newValue;
-    renderTimeIntervals(intervals);
-    updateToggleIsEnabledButtonAttributes(isEnabled, intervals.length);
+    handleStorageChange(changes.playerStorageData.newValue);
   }
 });
 
@@ -126,8 +124,12 @@ function onToggleIsEnabledClick(e) {
   });
 }
 
-function updateToggleIsEnabledButtonAttributes(isEnabled, intervalsAmount) {
-  toggleIsEnabledButton.disabled = intervalsAmount === 0;
+function handleStorageChange({ intervals, isEnabled }) {
+  renderTimeIntervals(intervals);
+  updateToggleIsEnabledButtonAttributes(isEnabled);
+}
+
+function updateToggleIsEnabledButtonAttributes(isEnabled) {
   toggleIsEnabledButton.setAttribute('data-is-enabled', isEnabled ? 'true' : 'false');
   toggleIsEnabledButton.textContent = isEnabled ? 'Disable' : 'Enable';
 }
