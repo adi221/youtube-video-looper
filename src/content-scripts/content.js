@@ -90,6 +90,10 @@ function getVideoPlayerElement() {
   return document.getElementsByTagName('video')[0];
 }
 
+function getSeekSliderElement() {
+  return document.querySelector('.ytp-progress-bar');
+}
+
 let playerStorageData = deepCopy(DEFAULT_PLAYER_STORAGE_DATA);
 let currentIntervalIndex = DEFAULT_CURRENT_INTERVAL_INDEX;
 
@@ -159,6 +163,36 @@ function stopListenToVideoTimeUpdate() {
   videoPlayer.removeEventListener('timeupdate', onVideoTimeUpdate);
 }
 
+function onSeekSliderMouseChange() {
+  toggleIsEnabled({ isEnabled: false });
+  stopListenToSeekSliderMouseDown();
+}
+
+function listenToSeekSliderMouseDown() {
+  const seekSlider = getSeekSliderElement();
+  if (!seekSlider) return;
+  // Ensure that we don't have multiple listeners
+  stopListenToSeekSliderMouseDown();
+  // When the user changes time manually, we disable the extension so we won't interrupt the user
+  seekSlider.addEventListener('mousedown', onSeekSliderMouseChange);
+}
+
+function stopListenToSeekSliderMouseDown() {
+  const seekSlider = getSeekSliderElement();
+  if (!seekSlider) return;
+  seekSlider.removeEventListener('mousedown', onSeekSliderMouseChange);
+}
+
+function attachEventListeners() {
+  listenToVideoTimeUpdate();
+  listenToSeekSliderMouseDown();
+}
+
+function detachEventListeners() {
+  stopListenToVideoTimeUpdate();
+  stopListenToSeekSliderMouseDown();
+}
+
 function addInterval(newInterval) {
   const videoPlayer = getVideoPlayerElement();
   if (!videoPlayer) return;
@@ -173,7 +207,7 @@ function addInterval(newInterval) {
     return;
   }
   addIntervalToList(newInterval);
-  listenToVideoTimeUpdate();
+  attachEventListeners();
   if (!playerStorageData.isEnabled) {
     setPlayerStorageData({ ...playerStorageData, isEnabled: true });
   }
@@ -204,18 +238,18 @@ function playInterval({ id }) {
 }
 
 function toggleIsEnabled({ isEnabled }) {
-  if (isEnabled) listenToVideoTimeUpdate();
-  else stopListenToVideoTimeUpdate();
+  if (isEnabled) attachEventListeners();
+  else detachEventListeners();
 
   setPlayerStorageData({ ...playerStorageData, isEnabled });
 }
 
 function resetIntervals() {
-  const videoPlayer = getVideoPlayerElement();
-  if (videoPlayer) {
-    stopListenToVideoTimeUpdate();
-  }
+  detachEventListeners();
+  resetInitialData();
+}
 
+function resetInitialData() {
   setPlayerStorageData(deepCopy(DEFAULT_PLAYER_STORAGE_DATA));
   currentIntervalIndex = DEFAULT_CURRENT_INTERVAL_INDEX;
 }
@@ -225,7 +259,10 @@ function setPlayerStorageData(newPlayerStorageData) {
   chrome.storage.local.set({ playerStorageData });
 }
 
-// Listen for page unload to clear the storage
-window.addEventListener('unload', function () {
+function clearPlayerStorageData() {
+  resetInitialData();
   chrome.storage.local.remove('playerStorageData');
-});
+}
+
+// Listen for page unload to clear the storage
+window.addEventListener('unload', clearPlayerStorageData);
