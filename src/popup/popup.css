@@ -47,6 +47,27 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 1.5rem;
+  /* For github docs link */
+  padding-bottom: 2rem;
+}
+
+/* View on Github */
+.view-on-github {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  color: var(--content-medium);
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 100;
+}
+
+.github-icon {
+  margin-right: 0.5rem;
 }
 
 /* Page not supported view */
@@ -56,7 +77,6 @@ body {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 100;
   display: flex;
   justify-content: center;
   align-items: center;
