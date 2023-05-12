@@ -47,7 +47,7 @@ If you would like to help, getting started is easy.
 6. Next, open Chrome/Brave/Chromium and enable developer mode via
    `Settings > Extensions > Manage Extensions` and toggle `Developer mode` in
    the top-right corner.
-7. Click `Load unpacked` and browse to the folder you cloned youtube-video-looper to.
+7. Click `Load unpacked` and browse to the `src` folder inside the folder you cloned youtube-video-looper to.
 8. Try out your changes, make sure they work as expected
 9. Commit and push your changes to github
 
