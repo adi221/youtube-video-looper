@@ -30,12 +30,8 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
   const isYoutubeWatchPage = YOUTUBE_WATCH_REGEX.test(url);
 
   if (!isYoutubeWatchPage) {
-    const div = document.createElement('div');
-    div.className = 'overlay';
-    div.innerHTML = 'This extension can only work on YouTube.';
-    document.body.appendChild(div);
-
-    document.querySelector('form').style.display = 'none';
+    renderCurrentPageNotSupportedByExtension();
+    hideExtensionElements();
   }
 });
 
@@ -222,4 +218,28 @@ function renderTimeIntervals(intervals) {
 
     ul.appendChild(li);
   });
+}
+
+function renderCurrentPageNotSupportedByExtension() {
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+
+  const containerElement = document.createElement('div');
+  containerElement.className = 'page-not-supported';
+
+  const iconElement = document.createElement('i');
+  iconElement.className = 'fa-sharp fa-regular fa-circle-xmark page-not-supported-svg';
+  const textElement = document.createElement('p');
+  textElement.className = 'page-not-supported-text';
+  textElement.innerHTML = 'This extension can work only on YouTube videos.';
+
+  containerElement.appendChild(iconElement);
+  containerElement.appendChild(textElement);
+  overlay.appendChild(containerElement);
+  document.body.appendChild(overlay);
+}
+
+function hideExtensionElements() {
+  document.querySelector('form').style.display = 'none';
+  document.querySelector('#timeIntervals').style.display = 'none';
 }
