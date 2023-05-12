@@ -7,6 +7,17 @@
   -webkit-box-sizing: border-box;
 }
 
+:root {
+  --primary: #e53935;
+  --content: #021d3d;
+  --content-medium: #233143;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  src: local('Poppins'), url(/styles/fonts/Poppins-Regular.ttf) format('truetype');
+}
+
 html {
   font-size: 100%;
 }
@@ -36,30 +47,106 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 1.5rem;
+  /* For github docs link */
+  padding-bottom: 2rem;
 }
 
+/* View on Github */
+.view-on-github {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  color: var(--content-medium);
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 100;
+}
+
+.github-icon {
+  margin-right: 0.5rem;
+}
+
+/* Page not supported view */
 .overlay {
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: #fff;
+  position: fixed;
+  top: 0;
+  left: 0;
   display: flex;
-  align-items: center;
   justify-content: center;
-  text-align: center;
+  align-items: center;
 }
 
-input[type="text"] {
+.page-not-supported {
+  align-self: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+}
+
+.page-not-supported-svg {
+  margin-right: 0.5rem;
+  font-size: 2.2rem;
+  color: var(--primary);
+  opacity: 0.6;
+}
+
+.page-not-supported-text {
+  font-size: 1rem;
+  line-height: 1.5rem;
+  letter-spacing: 0.44px;
+  color: var(--content);
+  opacity: 0.6;
+}
+
+/* Inputs */
+.input-base {
+  height: 2.5rem;
   width: 100%;
-  padding: 5px;
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem;
+  align-items: center;
   border: 1px solid #ccc;
-  border-radius: 3px;
-  box-sizing: border-box;
-  margin-bottom: 10px;
-  font-size: 14px;
-  text-align: center;
+  border-radius: 0.3rem;
+  margin-bottom: 0.6rem;
 }
 
+.input-base > input {
+  font-size: 1rem;
+  outline: none;
+  border: none;
+  width: 100%;
+  flex-grow: 1;
+  background-color: inherit;
+  padding-left: 0.3rem;
+  text-align: center;
+  color: var(--content);
+}
+
+.input-base > input::placeholder {
+  color: 1rem;
+  opacity: 0.6;
+}
+
+.input-base > input:-webkit-autofill {
+  -webkit-text-fill-color: var(--content-medium);
+  caret-color: var(--content-medium);
+}
+
+.input-base input::-webkit-outer-spin-button,
+.input-base input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Buttons */
 .buttons {
   display: flex;
   align-items: center;
@@ -81,7 +168,7 @@ input[type="text"] {
 }
 
 .buttons button:hover {
-  background-color: #e53935;
+  background-color: var(--primary);
 }
 
 .buttons button:disabled {
@@ -89,6 +176,7 @@ input[type="text"] {
   cursor: not-allowed;
 }
 
+/* Intervals list */
 #timeIntervals {
   display: flex;
   flex-direction: column;
@@ -97,6 +185,10 @@ input[type="text"] {
   padding: 0;
   margin: 0;
   width: 100%;
+}
+
+#timeIntervals .interval-row:last-child {
+  border-bottom: none;
 }
 
 .interval-row {

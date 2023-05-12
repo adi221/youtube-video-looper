@@ -12,26 +12,38 @@
   <body class="container">
     <ul id="timeIntervals"></ul>
     <form>
-      <input
-        type="text"
-        id="startTimeInput"
-        name="startTimeInput"
-        placeholder="Start Time - hh:mm:ss or mm:ss"
-        required
-      />
-      <input
-        type="text"
-        id="endTimeInput"
-        name="endTimeInput"
-        placeholder="End Time - hh:mm:ss or mm:ss"
-        required
-      />
+      <div class="input-base">
+        <input
+          type="text"
+          id="startTimeInput"
+          name="startTimeInput"
+          placeholder="Start Time - hh:mm:ss or mm:ss"
+          required
+        />
+      </div>
+      <div class="input-base">
+        <input
+          type="text"
+          id="endTimeInput"
+          name="endTimeInput"
+          placeholder="End Time - hh:mm:ss or mm:ss"
+          required
+        />
+      </div>
       <div class="buttons">
         <button id="addIntervalButton">Add</button>
         <button id="resetButton">Reset</button>
         <button id="toggleIsEnabledButton" data-is-enabled="true">Disable</button>
       </div>
     </form>
+    <a
+      href="https://github.com/adi221/youtube-video-looper"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="view-on-github"
+    >
+      <i class="github-icon fa-brands fa-github"></i> View guide on GitHub
+    </a>
     <script src="popup.js"></script>
   </body>
 </html>
