@@ -1,9 +1,13 @@
 name: Publish
 
+# on:
+#   push:
+#     tags:
+#       - '*'
+
+# Currently, the action will run only when I will trigger it manually.
 on:
-  push:
-    tags:
-      - '*'
+  workflow_dispatch:
 
 jobs:
   build:
